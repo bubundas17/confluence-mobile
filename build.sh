@@ -1,0 +1,1 @@
+gomobile bind -o ./build/atorrent.aar -target=android

@@ -1,5 +1,7 @@
-package main
+package atorrent
 
+// #cgo LDFLAGS: -static-libstdc++
+import "C"
 import (
 	"context"
 	"fmt"
@@ -11,8 +13,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/anacrolix/confluence/confluence"
-	debug_writer "github.com/anacrolix/confluence/debug-writer"
+	"confluence/confluence"
+
+	debug_writer "confluence/debug-writer"
+
 	"github.com/anacrolix/dht/v2"
 	"github.com/anacrolix/dht/v2/int160"
 	peer_store "github.com/anacrolix/dht/v2/peer-store"
@@ -68,8 +72,8 @@ var flags = struct {
 
 	AnalyzePeerUploadOrder bool `help:"Installs the peer upload order analysis"`
 }{
-	Addr:           "localhost:8080",
-	CacheCapacity:  10 << 30,
+	Addr:           "127.0.0.1:8080",
+	CacheCapacity:  1 << 30,
 	TorrentGrace:   time.Minute,
 	ExpireTorrents: true,
 	Dht:            true,
@@ -205,7 +209,7 @@ func getStorageResourceProvider() (_ resource.Provider, close func() error) {
 func newClientStorage(squirrelCache *squirrel.Cache) (
 	_ storage.ClientImpl,
 	onTorrentDrop func(torrent.InfoHash), // Storage cleanup for Torrents that are dropped.
-	close func() error,                   // Extra Client-storage-wide cleanup (for ClientImpls that need closing).
+	close func() error, // Extra Client-storage-wide cleanup (for ClientImpls that need closing).
 ) {
 	if flags.FileDir != "" {
 		return storage.NewFileByInfoHash(flags.FileDir), func(ih torrent.InfoHash) {
@@ -220,8 +224,12 @@ func newClientStorage(squirrelCache *squirrel.Cache) (
 	return storage.NewResourcePieces(prov), func(torrent.InfoHash) {}, close
 }
 
-func main() {
+func AndroidMain(mWorkingDir string) {
+	os.MkdirAll(mWorkingDir, 0777)
+	os.Chdir(mWorkingDir)
 	statsviz.RegisterDefault()
+	// wd, _ := os.Getwd()
+
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	tagflag.Parse(&flags)
 	err := mainErr()
